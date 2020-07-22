@@ -47,6 +47,7 @@ where
         deadline: options.deadline,
         max_first: options.max_first,
         cache_status: Default::default(),
+        load_manager: options.load_manager,
     };
 
     if !query.is_query() {
@@ -70,7 +71,7 @@ where
         block_ptr,
     );
     let elapsed = start.elapsed();
-    options.load_manager.add_query(query.shape_hash, elapsed);
+    ctx.load_manager.add_query(query.shape_hash, elapsed);
     query.log_cache_status(
         selection_set,
         block_ptr.map(|b| b.number).unwrap_or(0),
