@@ -972,7 +972,7 @@ pub fn blocks_with_triggers(
                     triggers.iter().map(EthereumTrigger::block_hash).collect();
                 let mut triggers_by_block: HashMap<u64, Vec<EthereumTrigger>> =
                     triggers.into_iter().fold(HashMap::new(), |mut map, t| {
-                        map.entry(t.block_number()).or_default().push(t);
+                        map.entry(t.block_hash()).or_default().push(t);
                         map
                     });
 
@@ -991,7 +991,7 @@ pub fn blocks_with_triggers(
                         EthereumBlockWithTriggers::new(
                             // All blocks with triggers are in `triggers_by_block`, and will be
                             // accessed here exactly once.
-                            triggers_by_block.remove(&block.number()).unwrap(),
+                            triggers_by_block.remove(&block.blockHash()).unwrap(),
                             BlockFinality::Final(block),
                         )
                     })
