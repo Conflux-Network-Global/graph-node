@@ -30,7 +30,7 @@ impl<K: Hash, V> Hash for CacheEntry<K, V> {
     }
 }
 
-impl<K, V: Default> CacheEntry<K, V> {
+impl<K, V: Default + CacheWeight> CacheEntry<K, V> {
     fn cache_key(key: K) -> Self {
         // Only the key matters for finding an entry in the cache.
         CacheEntry {
@@ -39,6 +39,12 @@ impl<K, V: Default> CacheEntry<K, V> {
             weight: 0,
             will_stale: false,
         }
+    }
+
+    /// Estimate the size of a `CacheEntry` with the given key and value
+    fn weight(key: &K, value: &V) -> usize {
+        value.weight() + std::mem::size_of_val(key) + std::mem::size_of::<Self>()
+            - std::mem::size_of::<V>()
     }
 }
 
@@ -79,7 +85,7 @@ impl<K: Clone + Ord + Eq + Hash + Debug, V: CacheWeight + Default> LfuCache<K, V
 
     /// Updates and bumps freceny if already present.
     pub fn insert(&mut self, key: K, value: V) {
-        let weight = value.weight();
+        let weight = CacheEntry::weight(&key, &value);
         match self.get_mut(key.clone()) {
             None => {
                 self.total_weight += weight;
@@ -94,9 +100,11 @@ impl<K: Clone + Ord + Eq + Hash + Debug, V: CacheWeight + Default> LfuCache<K, V
                 );
             }
             Some(entry) => {
+                let old_weight = entry.weight;
                 entry.weight = weight;
                 entry.value = value;
-                self.total_weight += weight - entry.weight;
+                self.total_weight -= old_weight;
+                self.total_weight += weight;
             }
         }
     }
